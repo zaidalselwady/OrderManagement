@@ -1,0 +1,328 @@
+﻿@model Order_Management_System.Models.ViewModels.LoginViewModel
+@{
+    ViewData["Title"] = "Login";
+    Layout = "_LoginLayout";
+}
+
+<div class="login-container">
+    <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">🌙</button>
+
+    <div class="login-card animate__animated animate__fadeIn">
+        <div class="login-header">
+            <div class="logo">
+                <i class="fas fa-box-open"></i>
+            </div>
+            <h2>Order Management System</h2>
+            <p>Please sign in to your account</p>
+        </div>
+
+        @if (ViewBag.Message != null)
+        {
+                <div class="alert alert-info" role="alert">
+                    <i class="fas fa-info-circle"></i>
+                @ViewBag.Message
+                </div>
+        }
+
+        <div class="alert alert-danger error-message" style="display: none;" role="alert">
+            <i class="fas fa-exclamation-circle"></i>
+            <span class="error-text"></span>
+        </div>
+
+        <div class="alert alert-warning error-details" style="display: none;" role="alert">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span class="error-details-text"></span>
+        </div>
+
+        <form id="loginForm" method="post" asp-action="Login" asp-controller="Home" novalidate>
+            @Html.AntiForgeryToken()
+
+            <div class="form-group">
+                <label asp-for="UserName" class="form-label">
+                    <i class="fas fa-user"></i>
+                    Username
+                </label>
+                <input asp-for="UserName" class="form-control" placeholder="Enter your username" required 
+                       autocomplete="username" autofocus />
+                <span asp-validation-for="UserName" class="invalid-feedback"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Password" class="form-label">
+                    <i class="fas fa-lock"></i>
+                    Password
+                </label>
+                <div class="password-input-container">
+                    <input asp-for="Password" type="password" class="form-control" placeholder="Enter your password" 
+                           required autocomplete="current-password" />
+                    <button type="button" class="password-toggle" onclick="togglePassword()" aria-label="Toggle password visibility">
+                        <i class="fas fa-eye" id="password-eye"></i>
+                    </button>
+                </div>
+                <span asp-validation-for="Password" class="invalid-feedback"></span>
+            </div>
+
+            <div class="form-options">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="rememberMe">
+                    <label class="form-check-label" for="rememberMe">
+                        Remember me
+                    </label>
+                </div>
+                <a href="#" class="forgot-password">Forgot password?</a>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-login" id="loginButton">
+                <span class="button-text">Sign In</span>
+                <span class="button-spinner" style="display: none;">
+                    <i class="fas fa-spinner fa-spin"></i>
+                </span>
+            </button>
+        </form>
+
+        <div class="login-footer">
+            <p>Need help? <a href="#" id="support-link">Contact Support</a></p>
+        </div>
+    </div>
+
+    <footer class="login-page-footer">
+        <p>&copy; 2025 Order Management System. All rights reserved.</p>
+    </footer>
+</div>
+
+@section Scripts {
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"></script>
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/additional-methods.min.js"></script>
+
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                // Check if user is already logged in
+                checkExistingLogin();
+
+                // Apply stored theme
+                applyStoredTheme();
+
+                // Setup theme toggle
+                setupThemeToggle();
+
+                // Setup form validation and submission
+                setupFormHandling();
+            });
+
+            async function checkExistingLogin() {
+                try {
+                    const response = await fetch('/Home/CheckLogin');
+                    const data = await response.json();
+
+                    if (data.isLoggedIn) {
+                        showMessage('You are already logged in. Redirecting...', 'info');
+                        setTimeout(() => {
+                            window.location.href = '/Home/Index';
+                        }, 1500);
+                    }
+                } catch (error) {
+                    console.error('Error checking login status:', error);
+                }
+            }
+
+            function applyStoredTheme() {
+                const storedTheme = localStorage.getItem('theme');
+                const themeToggle = document.getElementById('theme-toggle');
+
+                if (storedTheme === 'dark') {
+                    document.body.classList.add('dark-mode');
+                    if (themeToggle) themeToggle.textContent = '☀️';
+                }
+            }
+
+            function setupThemeToggle() {
+                const themeToggleBtn = document.getElementById('theme-toggle');
+                if (themeToggleBtn) {
+                    themeToggleBtn.addEventListener('click', () => {
+                        document.body.classList.toggle('dark-mode');
+                        const isDarkMode = document.body.classList.contains('dark-mode');
+                        themeToggleBtn.textContent = isDarkMode ? '☀️' : '🌙';
+                        localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
+                    });
+                }
+            }
+
+            function setupFormHandling() {
+                const loginForm = $("#loginForm");
+
+                // Setup jQuery validation
+                loginForm.validate({
+                    rules: {
+                        UserName: {
+                            required: true,
+                            maxlength: 50
+                        },
+                        Password: {
+                            required: true,
+                            maxlength: 50
+                        }
+                    },
+                    messages: {
+                        UserName: {
+                            required: "Please enter your username",
+                            maxlength: "Username cannot exceed 50 characters"
+                        },
+                        Password: {
+                            required: "Please enter your password",
+                            maxlength: "Password cannot exceed 50 characters"
+                        }
+                    },
+                    errorElement: "span",
+                    errorPlacement: function (error, element) {
+                        error.addClass("invalid-feedback");
+                        element.closest('.form-group').find('.invalid-feedback').replaceWith(error);
+                    },
+                    highlight: function (element) {
+                        $(element).addClass('is-invalid');
+                    },
+                    unhighlight: function (element) {
+                        $(element).removeClass('is-invalid');
+                    },
+                    submitHandler: function (form) {
+                        handleFormSubmission(form);
+                        return false;
+                    }
+                });
+            }
+
+            async function handleFormSubmission(form) {
+                const loginButton = document.getElementById('loginButton');
+                const buttonText = loginButton.querySelector('.button-text');
+                const buttonSpinner = loginButton.querySelector('.button-spinner');
+
+                // Show loading state
+                setLoadingState(true);
+
+                // Clear previous error messages
+                hideErrorMessages();
+
+                try {
+                    const formData = new FormData(form);
+
+                    const response = await fetch('/Home/Login', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        showMessage('Login successful! Redirecting...', 'success');
+                        setTimeout(() => {
+                            window.location.href = '/Home/Index';
+                        }, 1500);
+                    } else {
+                        showErrorMessage(result.errorMessage, result.errorType);
+                    }
+                } catch (error) {
+                    console.error('Login error:', error);
+                    showErrorMessage('An error occurred while communicating with the server. Please try again.', 'NETWORK_ERROR');
+                } finally {
+                    setLoadingState(false);
+                }
+            }
+
+            function setLoadingState(isLoading) {
+                const loginButton = document.getElementById('loginButton');
+                const buttonText = loginButton.querySelector('.button-text');
+                const buttonSpinner = loginButton.querySelector('.button-spinner');
+
+                if (isLoading) {
+                    loginButton.disabled = true;
+                    buttonText.style.display = 'none';
+                    buttonSpinner.style.display = 'inline-block';
+                    loginButton.classList.add('loading');
+                } else {
+                    loginButton.disabled = false;
+                    buttonText.style.display = 'inline';
+                    buttonSpinner.style.display = 'none';
+                    loginButton.classList.remove('loading');
+                }
+            }
+
+            function showErrorMessage(message, errorType) {
+                const errorMessageDiv = document.querySelector('.error-message');
+                const errorDetailsDiv = document.querySelector('.error-details');
+                const supportLink = document.getElementById('support-link');
+
+                // Show main error message
+                errorMessageDiv.querySelector('.error-text').textContent = message;
+                errorMessageDiv.style.display = 'flex';
+
+                // Show error type if available
+                if (errorType) {
+                    errorDetailsDiv.querySelector('.error-details-text').textContent = `Error Type: ${errorType}`;
+                    errorDetailsDiv.style.display = 'flex';
+
+                    // Update support link with error details
+                    const emailSubject = encodeURIComponent('Login Issue');
+                    const emailBody = encodeURIComponent(`Error Type: ${errorType}\nError Message: ${message}`);
+                    supportLink.href = `mailto:support@company.com?subject=${emailSubject}&body=${emailBody}`;
+                }
+
+                // Auto-hide after 10 seconds
+                setTimeout(() => {
+                    hideErrorMessages();
+                }, 10000);
+            }
+
+            function hideErrorMessages() {
+                document.querySelector('.error-message').style.display = 'none';
+                document.querySelector('.error-details').style.display = 'none';
+            }
+
+            function showMessage(message, type) {
+                const alertClass = type === 'success' ? 'alert-success' : 
+                                  type === 'error' ? 'alert-danger' : 'alert-info';
+
+                const alertDiv = document.createElement('div');
+                alertDiv.className = `alert ${alertClass}`;
+                alertDiv.innerHTML = `
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+                    ${message}
+                `;
+
+                const form = document.getElementById('loginForm');
+                form.parentNode.insertBefore(alertDiv, form);
+
+                setTimeout(() => {
+                    alertDiv.remove();
+                }, 5000);
+            }
+
+            function togglePassword() {
+                const passwordInput = document.getElementById('Password');
+                const eyeIcon = document.getElementById('password-eye');
+
+                if (passwordInput.type === 'password') {
+                    passwordInput.type = 'text';
+                    eyeIcon.className = 'fas fa-eye-slash';
+                } else {
+                    passwordInput.type = 'password';
+                    eyeIcon.className = 'fas fa-eye';
+                }
+            }
+
+            // Handle enter key in form fields
+            document.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    const loginForm = document.getElementById('loginForm');
+                    if (document.activeElement.closest('#loginForm')) {
+                        e.preventDefault();
+                        loginForm.dispatchEvent(new Event('submit'));
+                    }
+                }
+            });
+        </script>
+}
+
+@section Styles {
+        <link rel="stylesheet" href="~/css/login.css" />
+}
